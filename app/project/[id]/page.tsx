@@ -1,238 +1,315 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Layout from "@/components/Layout"
-import { supabase } from "@/lib/supabase"
-import type { Project } from "@/lib/supabase"
-import { daysSinceLastCommit } from "@/lib/github"
-import { Star, ExternalLink, DollarSign, Clock, ShoppingCart, Calendar, ArrowLeft, Loader2, Mail } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Star, GitBranch, Clock, Check, AlertTriangle, ArrowRight } from "lucide-react"
+import Link from "next/link"
 
-export default function ProjectDetailsPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [project, setProject] = useState<Project | null>(null)
+interface ProjectDetails {
+  id: string
+  title: string
+  description: string
+  github_url: string
+  demo_url?: string
+  price: number
+  stars: number
+  forks: number
+  tech_stack: string[]
+  last_commit_date: string
+  health_score: number
+  ai_valuation: {
+    revivalDifficulty: number
+    marketDemand: number
+    technicalDebt: number
+    recommendations: string[]
+  }
+  seller: {
+    username: string
+    avatar_url: string
+    reputation_score: number
+  }
+}
+
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const [project, setProject] = useState<ProjectDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
 
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const { data, error } = await supabase.from("projects").select("*").eq("id", params.id).single()
-
-        if (error) throw error
-        setProject(data)
-      } catch (error) {
-        console.error("Error fetching project:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProject()
-  }, [params.id])
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(price)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
-  const handleBuyNow = async () => {
-    if (!project || project.status !== "active") {
-      alert("This project is no longer available for purchase.")
-      return
-    }
-
-    setCheckoutLoading(true)
-
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    // In a real app, this would fetch from the API
+    setTimeout(() => {
+      setProject({
+        id: params.id,
+        title: "TaskFlow Pro",
+        description:
+          "Advanced project management tool with AI-powered insights. Built with React and Node.js. Includes user authentication, real-time collaboration, and analytics dashboard. The project was developed over 8 months but was abandoned due to shifting priorities. All code is well-documented with comprehensive test coverage.",
+        github_url: "https://github.com/example/taskflow-pro",
+        demo_url: "https://demo.taskflowpro.example",
+        price: 15000,
+        stars: 1247,
+        forks: 89,
+        tech_stack: ["React", "Node.js", "MongoDB", "Socket.io", "Chart.js", "TensorFlow.js"],
+        last_commit_date: "2023-01-15T00:00:00Z",
+        health_score: 85,
+        ai_valuation: {
+          revivalDifficulty: 2,
+          marketDemand: 4,
+          technicalDebt: 2,
+          recommendations: [
+            "Update dependencies to latest versions",
+            "Implement mobile responsive design",
+            "Add more AI-powered features to differentiate from competitors",
+          ],
         },
-        body: JSON.stringify({ projectId: project.id }),
+        seller: {
+          username: "techfounder",
+          avatar_url: "/placeholder.svg?height=40&width=40",
+          reputation_score: 4.8,
+        },
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to create checkout session")
-      }
-
-      const { url } = await response.json()
-
-      // Redirect to Stripe Checkout
-      window.location.href = url
-    } catch (error) {
-      console.error("Error creating checkout session:", error)
-      alert(`Error: ${error instanceof Error ? error.message : "Failed to process payment"}`)
-    } finally {
-      setCheckoutLoading(false)
-    }
-  }
-
-  // Calculate days since last commit if available
-  const abandonedDays = project?.last_commit_date ? daysSinceLastCommit(project.last_commit_date) : null
+      setLoading(false)
+    }, 1000)
+  }, [params.id])
 
   if (loading) {
     return (
-      <Layout>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="h-10 bg-gray-200 rounded mb-4 w-1/3"></div>
+          <div className="h-6 bg-gray-200 rounded mb-8 w-2/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
+              <div className="h-40 bg-gray-200 rounded mb-4"></div>
+              <div className="h-6 bg-gray-200 rounded mb-2"></div>
+              <div className="h-6 bg-gray-200 rounded mb-2"></div>
+              <div className="h-6 bg-gray-200 rounded mb-4"></div>
+            </div>
+            <div>
+              <div className="h-60 bg-gray-200 rounded mb-4"></div>
+            </div>
           </div>
         </div>
-      </Layout>
+      </div>
     )
   }
 
   if (!project) {
     return (
-      <Layout>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h1>
-            <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or has been removed.</p>
-            <button
-              onClick={() => router.push("/")}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Back to Home
-            </button>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
+          <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or has been removed.</p>
+          <Link href="/browse" className="bg-black text-white px-6 py-3 rounded-md hover:bg-gray-800">
+            Browse Projects
+          </Link>
         </div>
-      </Layout>
+      </div>
     )
   }
 
+  const daysSinceLastCommit = Math.floor(
+    (new Date().getTime() - new Date(project.last_commit_date).getTime()) / (1000 * 60 * 60 * 24),
+  )
+
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button onClick={() => router.push("/")} className="flex items-center text-gray-600 hover:text-gray-900 mb-6">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Projects
-        </button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">{project.title}</h1>
+        <p className="text-gray-600">Advanced project management tool with AI-powered insights</p>
+      </div>
 
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex justify-between items-start mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">{project.title}</h1>
-            <span
-              className={`px-3 py-1 text-sm rounded-full ${
-                project.status === "active"
-                  ? "bg-green-100 text-green-800"
-                  : project.status === "sold"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {project.status === "sold" ? "Sold" : project.status}
-            </span>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4">Project Overview</h2>
+            <p className="text-gray-700 mb-6">{project.description}</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center">
-              <DollarSign className="w-8 h-8 text-green-600 mb-2" />
-              <span className="text-2xl font-bold text-green-600">{formatPrice(project.estimated_value)}</span>
-              <span className="text-sm text-gray-500">Estimated Value</span>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center">
-              <Star className="w-8 h-8 text-amber-500 mb-2" />
-              <span className="text-2xl font-bold text-gray-900">{project.stars.toLocaleString()}</span>
-              <span className="text-sm text-gray-500">GitHub Stars</span>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center justify-center">
-              <Calendar className="w-8 h-8 text-blue-600 mb-2" />
-              <span className="text-2xl font-bold text-gray-900">{formatDate(project.created_at)}</span>
-              <span className="text-sm text-gray-500">Listed Date</span>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">About This Project</h2>
-            <p className="text-gray-700 whitespace-pre-line">{project.description || "No description available."}</p>
-          </div>
-
-          {abandonedDays && abandonedDays > 30 && (
-            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <div className="flex items-center text-amber-700 mb-2">
-                <Clock className="w-5 h-5 mr-2" />
-                <span className="font-semibold">Abandoned {abandonedDays} days ago</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Stars</div>
+                <div className="flex items-center">
+                  <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                  <span className="font-bold">{project.stars}</span>
+                </div>
               </div>
-              <p className="text-amber-600 text-sm">
-                This project hasn't been updated in a while, making it a perfect candidate for revival!
-              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Forks</div>
+                <div className="flex items-center">
+                  <GitBranch className="w-4 h-4 text-gray-600 mr-1" />
+                  <span className="font-bold">{project.forks}</span>
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Last Commit</div>
+                <div className="flex items-center">
+                  <Clock className="w-4 h-4 text-gray-600 mr-1" />
+                  <span className="font-bold">{daysSinceLastCommit} days ago</span>
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500">Health Score</div>
+                <div className="flex items-center">
+                  {project.health_score > 70 ? (
+                    <Check className="w-4 h-4 text-green-500 mr-1" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 mr-1" />
+                  )}
+                  <span className="font-bold">{project.health_score}/100</span>
+                </div>
+              </div>
             </div>
-          )}
 
-          {project.repo_url && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Repository</h2>
-              <a
-                href={project.repo_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center text-blue-600 hover:text-blue-800"
-              >
-                <ExternalLink className="w-5 h-5 mr-2" />
-                <span>{project.repo_url}</span>
-              </a>
+            <h3 className="font-bold mb-2">Tech Stack</h3>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {project.tech_stack.map((tech) => (
+                <span key={tech} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  {tech}
+                </span>
+              ))}
             </div>
-          )}
 
-          {project.seller_email && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact</h2>
-              <div className="flex items-center">
-                <Mail className="w-5 h-5 mr-2 text-gray-500" />
-                <a href={`mailto:${project.seller_email}`} className="text-blue-600 hover:text-blue-800">
-                  {project.seller_email}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-bold mb-2">AI Analysis</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Revival Difficulty</span>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-4 h-4 rounded-full mx-0.5 ${
+                            i < project.ai_valuation.revivalDifficulty ? "bg-blue-500" : "bg-gray-200"
+                          }`}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Market Demand</span>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-4 h-4 rounded-full mx-0.5 ${
+                            i < project.ai_valuation.marketDemand ? "bg-green-500" : "bg-gray-200"
+                          }`}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Technical Debt</span>
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-4 h-4 rounded-full mx-0.5 ${
+                            i < project.ai_valuation.technicalDebt ? "bg-red-500" : "bg-gray-200"
+                          }`}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-bold mb-2">Recommendations</h3>
+                <ul className="space-y-2">
+                  {project.ai_valuation.recommendations.map((rec, index) => (
+                    <li key={index} className="flex items-start">
+                      <ArrowRight className="w-4 h-4 text-blue-500 mr-2 mt-1 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold mb-4">Repository Preview</h2>
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full mr-2"></div>
+                  <span className="font-mono text-sm">{project.github_url.split("/").slice(-2).join("/")}</span>
+                </div>
+                <a
+                  href={project.github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  View on GitHub
                 </a>
               </div>
-            </div>
-          )}
-
-          {project.status === "active" && (
-            <div className="mt-8 border-t border-gray-200 pt-8">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                <div className="mb-4 sm:mb-0">
-                  <h3 className="text-lg font-semibold text-gray-900">Ready to revive this project?</h3>
-                  <p className="text-gray-600">Purchase now and get full access to the codebase.</p>
-                </div>
-                <button
-                  onClick={handleBuyNow}
-                  disabled={checkoutLoading}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center"
-                >
-                  {checkoutLoading ? (
-                    <span className="flex items-center">
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
-                    </span>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      Buy Now ({formatPrice(project.estimated_value)})
-                    </>
-                  )}
-                </button>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-4 bg-gray-200 rounded w-4/6"></div>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+
+        <div>
+          <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+            <div className="text-center mb-4">
+              <div className="text-3xl font-bold text-green-600 mb-1">${project.price.toLocaleString()}</div>
+              <div className="text-sm text-gray-500">One-time purchase</div>
+            </div>
+
+            <button className="w-full bg-black text-white py-3 rounded-lg mb-4 hover:bg-gray-800">Buy Now</button>
+            <button className="w-full bg-white text-black py-3 rounded-lg border border-gray-300 mb-6 hover:bg-gray-50">
+              Contact Seller
+            </button>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center mb-4">
+                <img
+                  src={project.seller.avatar_url || "/placeholder.svg"}
+                  alt={project.seller.username}
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+                <div>
+                  <div className="font-medium">{project.seller.username}</div>
+                  <div className="flex items-center">
+                    <Star className="w-3 h-3 text-yellow-400 mr-1" />
+                    <span className="text-sm text-gray-600">{project.seller.reputation_score}/5</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-sm text-gray-600">
+                <p>Seller since Jan 2023</p>
+                <p>5 successful sales</p>
+              </div>
+            </div>
+
+            <div className="border-t border-b py-4 my-4">
+              <h3 className="font-bold mb-2">What's included</h3>
+              <ul className="space-y-2">
+                <li className="flex items-center">
+                  <Check className="w-4 h-4 text-green-500 mr-2" />
+                  <span className="text-sm">Full source code</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="w-4 h-4 text-green-500 mr-2" />
+                  <span className="text-sm">Documentation</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="w-4 h-4 text-green-500 mr-2" />
+                  <span className="text-sm">GitHub repository transfer</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="w-4 h-4 text-green-500 mr-2" />
+                  <span className="text-sm">2 weeks of support</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="text-xs text-gray-500 text-center">Protected by ReviveStack Escrow Service</div>
+          </div>
         </div>
       </div>
-    </Layout>
+    </div>
   )
 }
