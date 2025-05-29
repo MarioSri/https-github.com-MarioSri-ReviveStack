@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Star } from "lucide-react"
+import Link from "next/link"
 
 interface Project {
   id: string
@@ -78,8 +79,15 @@ export default function BrowseProjectsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">Browse Projects</h1>
-      <p className="text-gray-600 mb-8">Discover abandoned SaaS projects with potential for revival</p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Browse Projects</h1>
+          <p className="text-gray-600">Discover abandoned SaaS projects with potential for revival</p>
+        </div>
+        <Link href="/" className="flex items-center">
+          <img src="/images/revivestack-icon.png" alt="ReviveStack" className="w-10 h-10" />
+        </Link>
+      </div>
 
       <div className="flex justify-center mb-8">
         <div className="relative w-full max-w-2xl">

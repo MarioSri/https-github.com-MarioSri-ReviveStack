@@ -38,7 +38,7 @@ export async function createConnectedAccount(userId: string, email: string) {
 export async function createEscrowPayment(amount: number, sellerId: string, metadata: Record<string, string>) {
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: formatAmountForStripe(amount), // Use the formatAmountForStripe function here
+      amount: formatAmountForStripe(amount),
       currency: "usd",
       transfer_data: {
         destination: sellerId,

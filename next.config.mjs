@@ -7,7 +7,22 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    domains: ['via.placeholder.com', 'blob.v0.dev'],
+  },
+  experimental: {
+    serverComponentsExternalPackages: [],
+  },
+  // Ensure we don't try to bundle server-only packages
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    return config
   },
 }
 

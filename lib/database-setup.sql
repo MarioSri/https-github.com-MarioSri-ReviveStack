@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
   last_commit_date TIMESTAMP
 );
 
--- Create a profiles table with proper constraints
+-- Create a profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT UNIQUE,
@@ -27,19 +27,57 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Clean up any duplicate profiles (if they exist)
-DELETE FROM public.profiles 
-WHERE id IN (
-  SELECT id FROM (
-    SELECT id, ROW_NUMBER() OVER (PARTITION BY id ORDER BY created_at) as rn
-    FROM public.profiles
-  ) t
-  WHERE t.rn > 1
+-- Create user subscriptions table
+CREATE TABLE IF NOT EXISTS public.user_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  status TEXT DEFAULT 'inactive',
+  current_period_end TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create offers table
+CREATE TABLE IF NOT EXISTS public.offers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES public.projects(id) NOT NULL,
+  buyer_id UUID REFERENCES auth.users(id) NOT NULL,
+  amount INTEGER NOT NULL,
+  status TEXT DEFAULT 'pending',
+  stripe_payment_intent TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create saved projects table
+CREATE TABLE IF NOT EXISTS public.saved_projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  project_id UUID REFERENCES public.projects(id) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, project_id)
+);
+
+-- Create watchlist alerts table
+CREATE TABLE IF NOT EXISTS public.watchlist_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  name TEXT NOT NULL,
+  criteria JSONB NOT NULL,
+  enabled BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.offers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.watchlist_alerts ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies to avoid conflicts
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
@@ -68,6 +106,53 @@ CREATE POLICY "Users can create their own projects" ON public.projects
 
 CREATE POLICY "Users can update their own projects" ON public.projects
   FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create policies for user subscriptions
+CREATE POLICY "Users can view their own subscriptions" ON public.user_subscriptions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own subscriptions" ON public.user_subscriptions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own subscriptions" ON public.user_subscriptions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Create policies for offers
+CREATE POLICY "Users can view their own offers" ON public.offers
+  FOR SELECT USING (auth.uid() = buyer_id OR auth.uid() IN (
+    SELECT user_id FROM public.projects WHERE id = project_id
+  ));
+
+CREATE POLICY "Users can create offers" ON public.offers
+  FOR INSERT WITH CHECK (auth.uid() = buyer_id);
+
+CREATE POLICY "Project owners can update offers" ON public.offers
+  FOR UPDATE USING (auth.uid() IN (
+    SELECT user_id FROM public.projects WHERE id = project_id
+  ));
+
+-- Create policies for saved projects
+CREATE POLICY "Users can view their own saved projects" ON public.saved_projects
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can save projects" ON public.saved_projects
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can remove their saved projects" ON public.saved_projects
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Create policies for watchlist alerts
+CREATE POLICY "Users can view their own alerts" ON public.watchlist_alerts
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create alerts" ON public.watchlist_alerts
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own alerts" ON public.watchlist_alerts
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own alerts" ON public.watchlist_alerts
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()

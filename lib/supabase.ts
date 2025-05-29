@@ -16,4 +16,6 @@ export type Project = {
   seller_email: string | null
   created_at: string
   last_commit_date?: string
+  user_id?: string
+  buyer_id?: string
 }
