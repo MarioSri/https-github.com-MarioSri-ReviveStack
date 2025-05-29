@@ -39,6 +39,10 @@ export async function signIn(email: string, password: string) {
 
 // Sign in with Google - Updated for better error handling
 export async function signInWithGoogle() {
+  if (typeof window === "undefined") {
+    throw new Error("OAuth can only be used on the client side")
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -55,6 +59,10 @@ export async function signInWithGoogle() {
 
 // Sign in with GitHub
 export async function signInWithGitHub() {
+  if (typeof window === "undefined") {
+    throw new Error("OAuth can only be used on the client side")
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {

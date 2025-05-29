@@ -26,6 +26,8 @@ export default function AuthPage() {
   useEffect(() => {
     // Check if user is already authenticated
     const checkAuth = async () => {
+      if (typeof window === "undefined") return // Add this line
+
       const user = await getCurrentUser()
       if (user) {
         router.push("/dashboard")

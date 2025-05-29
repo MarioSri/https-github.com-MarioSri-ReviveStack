@@ -21,6 +21,8 @@ export default function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (typeof window === "undefined") return // Add this line
+
       const currentUser = await getCurrentUser()
       setUser(currentUser)
       setLoading(false)
@@ -28,14 +30,16 @@ export default function Layout({ children }: LayoutProps) {
 
     checkAuth()
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null)
-    })
+    // Listen for auth changes - only on client side
+    if (typeof window !== "undefined") {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user || null)
+      })
 
-    return () => subscription.unsubscribe()
+      return () => subscription.unsubscribe()
+    }
   }, [])
 
   const handleSignOut = async () => {

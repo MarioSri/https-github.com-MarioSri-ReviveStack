@@ -12,6 +12,10 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: [],
   },
+  // Add this to handle client-side only code
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   // Ensure we don't try to bundle server-only packages
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -24,6 +28,8 @@ const nextConfig = {
     }
     return config
   },
+  // Add output configuration for static export compatibility
+  output: 'standalone',
 }
 
 export default nextConfig

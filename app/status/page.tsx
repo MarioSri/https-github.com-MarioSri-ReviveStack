@@ -22,6 +22,13 @@ export default function StatusPage() {
 
   const [loading, setLoading] = useState(true)
 
+  const getBaseUrl = () => {
+    if (typeof window !== "undefined") {
+      return window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.com"
+  }
+
   useEffect(() => {
     checkServices()
   }, [])
@@ -193,7 +200,7 @@ export default function StatusPage() {
               <p>
                 • If Google OAuth is failing, check that the OAuth consent screen is configured in Google Cloud Console
               </p>
-              <p>• Ensure the redirect URI is set to: {window.location.origin}/auth/callback</p>
+              <p>• Ensure the redirect URI is set to: {getBaseUrl()}/auth/callback</p>
               <p>• Verify that all environment variables are properly set in your deployment</p>
               <p>• Check the browser console for detailed error messages</p>
             </div>
